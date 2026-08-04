@@ -95,6 +95,22 @@
             <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
             <version>1.1.2.0</version>
         </dependency>
+
+        <!-- https://help.aliyun.com/zh/model-studio/install-sdk#351a991edb6nm-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dashscope-sdk-java</artifactId>
+            <version>2.22.24</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Source: https://mvnrepository.com/artifact/dev.langchain4j/langchain4j-community-dashscope -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-community-dashscope</artifactId>
+            <version>1.18.0-beta28</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
