@@ -28,3 +28,47 @@
 * SpringAI 接入
 * LangChain4j 接入
 
+
+
+### 需求分析
+
+参考各大AI平台上传的AI应用，随便一个都能做出一个项目
+
+### 细化需求
+
+利用 AI 帮助我们细化需求
+
+### 方案设计
+
+#### 系统提示词设计
+
+利用 AI 生成系统提示词
+
+#### 多轮对话实现
+
+要让AI 能够记忆上下文，不能出现断片
+
+
+
+***
+
+综上，需要实现系统提示词的记录和对话记忆
+
+封装一个 ChatClient 方便复用
+
+
+
+### 自定义 Advisor
+
+#### 自定义 Log Advisor
+
+> 虽然 Spring AI 提供了 SimpleLoggerAdvisor 但是默认debug级别输出
+
+自定义 MyLoggerAdvisor 拦截器
+
+自定义 Re2 Advisor 
+
+
+
+#### 结构化输出
+
