@@ -5,9 +5,9 @@ spring:
     active: local
 
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/picture_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
+    # 本机 PostgreSQL 通过 IPv6 回环地址连接；IPv6 地址在 JDBC URL 中需加方括号
+    url: jdbc:postgresql://[::1]:5432/ai_agent
+    username: postgres
     password: 123456
 
 server:
