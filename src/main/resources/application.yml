@@ -49,3 +49,7 @@ mybatis-plus:
 logging:
   level:
     org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor: debug
+
+# searchApi
+search-api:
+  api-key: 你的apikey

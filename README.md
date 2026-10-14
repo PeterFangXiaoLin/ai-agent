@@ -414,3 +414,116 @@ QueryRequest 构造搜索请求，similarSearch 方法传入实现搜索
 
 #### 检索器配置
 
+
+
+
+
+## 工具调用（Tool Calling）
+
+用于AI无法自己完成的任务
+
+
+
+注解式和编程式
+
+1）注解式
+
+```java
+class WeatherTools {
+    @Tool(description = "获取指定城市的当前天气情况")
+    String getWeather(@ToolParam(description = "城市名称") String city) {
+        // 获取天气的实现逻辑
+        return "北京今天晴朗，气温25°C";
+    }
+}
+
+```
+
+2）编程式
+
+先定义工具
+
+```java
+class WeatherTools {
+    String getWeather(String city) {
+        // 获取天气的实现逻辑
+        return "北京今天晴朗，气温25°C";
+    }
+}
+
+```
+
+```java
+Method method = ReflectionUtils.findMethod(WeatherTools.class, "getWeather", String.class);
+ToolCallback toolCallback = MethodToolCallback.builder()
+    .toolDefinition(ToolDefinition.builder(method)
+            .description("获取指定城市的当前天气情况")
+            .build())
+    .toolMethod(method)
+    .toolObject(new WeatherTools())
+    .build();
+
+```
+
+
+
+
+
+### 文件操作
+
+读取文件和写入文件
+
+1. 定义 tmp目录存放文件
+
+2. 读取文件，给出文件名称
+3. 写入文件，给出写入的内容和文件名称
+4. 编写测试类测试
+
+
+
+### 联网搜索工具
+
+使用 SearchAPI 实现
+
+
+
+### 网页抓取工具
+
+使用 Jsoup 实现
+
+
+
+### 资源下载工具
+
+使用hutool download 工具实现
+
+
+
+### PDF生成工具
+
+使用 itext 库生成 pdf
+
+
+
+### 终端命令操作工具
+
+ProcessBuild
+
+
+
+### 注册所有工具
+
+ToolCallbacks.from
+
+
+
+编写调用工具方法 doChatWithTools
+
+
+
+
+
+### 高级工具特性
+
+1. 可以增加 ToolContext 参数，传递当前的登录用户信息等不需要询问用户就可以获得的信息
+2. 方法 Tool 描述可以增加 returnDirect ，不需要再次调用大模型，直接返回工具结果
