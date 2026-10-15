@@ -527,3 +527,640 @@ ToolCallbacks.from
 
 1. 可以增加 ToolContext 参数，传递当前的登录用户信息等不需要询问用户就可以获得的信息
 2. 方法 Tool 描述可以增加 returnDirect ，不需要再次调用大模型，直接返回工具结果
+
+
+
+## MCP （Model Context Protocol）
+
+### Mcp Client（客户端）  调用 Mcp Server
+
+* Stdio 调用： 本地调用
+* SSE 远程调用：远程调用
+
+
+
+### Mcp Server (服务端)
+
+可以提供多种类型的信息
+
+
+
+
+
+### 使用MCP
+
+pom.xml 引入
+
+```xml
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-client</artifactId>
+</dependency>
+```
+
+新建 mcp-servers.json
+
+```json
+{
+  "mcpServers": {
+    "amap-maps": {
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@amap/amap-maps-mcp-server"
+      ],
+      "command": "cmd.exe",
+      "env": {
+        "AMAP_MAPS_API_KEY": "你的apiKey"
+      }
+    }
+  }
+}
+```
+
+修改application.yml 配置
+
+```yaml
+spring:
+  ai:
+    mcp:
+      client:
+        enabled: true
+        type: SYNC
+        request-timeout: 120s
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+```
+
+
+
+### 开发 mcp server
+
+#### MCP 服务端开发
+
+##### stdio 模式
+
+1、新建项目
+
+选择依赖 lombok
+
+添加依赖
+
+```xml
+<dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-bom</artifactId>
+                <version>1.1.2.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>1.1.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-extensions-bom</artifactId>
+                <version>1.1.2.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+```
+
+```xml
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+</dependency>
+```
+
+
+
+**stdio 需要关闭控制台的所有输出打印，包括日志、banner等内容**
+
+2、修改 `application.yml` 
+
+```yaml
+spring:
+  application:
+    name: mcp-server-stdio
+    
+  main:
+    web-application-type: none
+    banner-mode: off
+
+  ai:
+    mcp:
+      server:
+        name: mcp-server
+        version: 1.0.0
+        stdio: true
+        enabled: true
+        type: SYNC
+
+logging:
+  level:
+    root: OFF
+
+```
+
+3、 定义工具
+
+```java
+@Service
+public class WeatherService {
+
+    @Tool(description = "根据城市名称查询天气信息")
+    public String getWeather(@ToolParam(description = "城市名称") String city) {
+        if (city == null) {
+            return "请提供城市名称";
+        }
+        return switch (city) {
+            case "北京" -> "北京: 晴, 25°C";
+            case "上海" -> "上海: 多云, 22°C";
+            case "深圳" -> "深圳: 小雨, 28°C";
+            default -> city + ": 下雪, -20°C";
+        };
+    }
+}
+```
+
+
+
+4、注册工具
+
+```java
+    @Bean
+    public ToolCallbackProvider weatherTools(WeatherService weatherService) {
+        return MethodToolCallbackProvider.builder()
+                .toolObjects(weatherService)
+                .build();
+    }
+```
+
+5、 maven 打包
+
+![image-20261015183913431](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015183922317.png)
+
+
+
+6、 修改环境变量
+
+java 版本为java 21 或者 修改下面的命令
+
+![image-20261015193102688](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015193104080.png)
+
+7、 cursor 添加mcp
+
+```json
+{
+  "mcpServers": {
+    "weather-stdio": {
+      "disabled": false,
+      "timeout": 60,
+      "type": "stdio",
+      "command": "java",
+      "args": [
+        "-jar",
+         # 改成自己jar包位置
+        "D:\\LLMentor\\LLMentor\\mcp\\mcp-server-stdio\\target\\mcp-server-stdio-1.0.0-SNAPSHOT.jar"
+      ]
+    }
+  }
+}
+```
+
+8、 使用mcp
+
+![image-20261015193135070](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015193136597.png)
+
+
+
+##### SSE
+
+1、新建项目，依赖同上面一样 **工具代码也是一样的**
+
+2、修改 `application.yml`
+
+```yaml
+spring:
+  application:
+    name: mcp-server-sse
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: weather-sse-server
+        version: 1.0.0
+        type: SYNC
+        capabilities:
+          tool: true
+          resource: false
+          prompt: false
+          completion: false
+        sse-message-endpoint: /mcp/messages   # 客户端发送消息的HTTP endpoint ("写信发消息")
+        sse-endpoint: /sse                    # 客户端订阅SSE的endpoint （"听收音机"）
+
+server:
+  port: 8082
+
+```
+
+
+
+3、启动应用
+
+![image-20261015200129101](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015200137559.png)
+
+
+
+4、访问地址 http://localhost:8082/sse
+
+![image-20261015200234391](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015200235711.png)
+
+
+
+
+
+SSE 的 `endpoint` 事件中，`data:` 后面的 `/mcp/messages?sessionId=e92d9a21-50c2-4d79-a26f-b2cc7acc7d63` 就是客户端向服务端发送请求的相对地址。`data:` 是 SSE 字段名，不属于请求 URL。
+
+在 Postman 中先发送 `GET http://localhost:8082/sse`，设置请求头 `Accept: text/event-stream`，并保持该连接打开。在另一个请求标签页中，按下面的顺序发送四次请求，公共配置如下：
+
+* 请求方法：`POST`
+* 请求 URL：`http://localhost:8082/mcp/messages?sessionId=e92d9a21-50c2-4d79-a26f-b2cc7acc7d63`
+* 请求头：`Content-Type: application/json`
+* Body：选择 `raw` → `JSON`，依次填入下面四个请求体。
+
+`sessionId` 必须替换为当前 SSE 连接返回的实际值，四次 POST 使用同一个值；重新连接后，需要使用新连接返回的地址。
+
+发送工具请求前，需要先完成初始化。以下示例使用适用于该 SSE 流程的 MCP 协议版本 `2024-11-05`。
+
+1） 初始化
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "postman-client",
+      "version": "1.0.0"
+    }
+  }
+}
+```
+
+回到保持连接的 SSE 标签页，等待 `id: 1` 的成功响应（包含 `result.protocolVersion`、`result.capabilities` 和 `result.serverInfo`），再发送下一步。
+
+
+
+![image-20261015201715354](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015201716748.png)
+
+
+
+![image-20261015201735119](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015201740780.png)
+
+2）客户端发送 initialized 通知
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/initialized"
+}
+```
+
+通知不带 `id`，服务端不会为它返回 JSON-RPC 响应。POST 提交成功后即可继续查询工具列表。
+
+
+
+![image-20261015201915362](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015201917104.png)
+
+
+
+![image-20261015201942071](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015201943155.png)
+
+
+
+3）查询工具列表
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list",
+  "params": {}
+}
+```
+
+在 SSE 标签页查看 `id: 2` 的响应，`result.tools` 就是服务端注册的工具列表。
+
+4）调用工具
+
+完成初始化和 initialized 通知后，继续向当前 SSE 连接对应的 `/mcp/messages?sessionId=...` 地址发送 `POST`，请求头保持 `Content-Type: application/json`，Body 选择 `raw` → `JSON`：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "getWeather",
+    "arguments": {
+      "city": "北京"
+    }
+  }
+}
+```
+
+`params.name` 使用 `tools/list` 返回的工具名称；当前天气工具名为 `getWeather`，参数名为 `city`，可将城市改为 `上海` 或 `深圳`。
+
+保持 SSE 连接打开，在 SSE 标签页查看 `id: 3` 的响应，天气调用结果位于 `result.content` 中。
+
+注意：该 SSE 模式通过 POST 发送消息，通过原来的 SSE 连接接收 JSON-RPC 响应，因此 POST 的响应体可能为空，初始化结果和工具列表要在 SSE 的 `message` 事件中查看。
+
+协议参考：[连接生命周期](https://modelcontextprotocol.io/specification/2024-11-05/basic/lifecycle)、[SSE 传输](https://modelcontextprotocol.io/specification/2024-11-05/basic/transports)、[工具列表](https://modelcontextprotocol.io/specification/2024-11-05/server/tools)。
+
+
+
+![image-20261015202111637](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015202112914.png)
+
+![image-20261015202526421](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015202528365.png)
+
+中文乱码解决，修改 `application.yml`
+
+```yaml
+server:
+  port: 8082
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+```
+
+
+
+5、cursor 接入
+
+```json
+{
+  "mcpServers": {
+    "weather-sse": {
+      "type": "sse",
+      "url": "http://127.0.0.1:8082/sse",
+      "autoApprove": [],
+      "timeout": 60,
+      "disabled": false
+    }
+  }
+}
+```
+
+![image-20261015202835619](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015202836751.png)
+
+
+
+##### Streamable Http
+
+1、 新建项目，依赖同上面，工具代码同上面
+
+2、修改 `application.yml` 然后启动
+
+```yaml
+spring:
+  application:
+    name: mcp-server-streamablehttp
+  ai:
+    mcp:
+      server:
+        ## 这个地方改成STATELESS，就是无状态模式
+        protocol: STREAMABLE
+        name: streamable-mcp-server
+        version: 1.0.0
+        type: SYNC
+        instructions: "这个服务是用来查询城市天气的。"
+        resource-change-notification: true
+        tool-change-notification: true
+        prompt-change-notification: true
+        streamable-http:
+          mcp-endpoint: /api/mcp
+          keep-alive-interval: 30s
+
+server:
+  port: 8083
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+```
+
+3、访问 `mcp-endpoint` 端点完成初始化（Postman）
+
+当前配置为 `protocol: STREAMABLE`，按顺序执行：`initialize` → `notifications/initialized` → `tools/list` → `tools/call`。
+
+下面四步都向 `http://localhost:8083/api/mcp` 发送 `POST` 请求，Body 选择 `raw` → `JSON`，公共请求头如下：
+
+```http
+Content-Type: application/json
+Accept: application/json, text/event-stream
+```
+
+这四步直接通过 POST 完成，无需先建立单独的 GET SSE 连接。初始化结果、工具列表和工具调用结果在各自 POST 的响应中查看：响应类型为 `application/json` 时读取 JSON，为 `text/event-stream` 时读取 SSE 事件的 `data` 中的 JSON。
+
+1）初始化
+
+首次请求不带 `Mcp-Session-Id`，请求体如下：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "postman-client",
+      "version": "1.0.0"
+    }
+  }
+}
+```
+
+等待收到 `id: 1` 的成功响应，再进行下一步。在 Postman 中保存以下两个环境变量或集合变量：
+
+* `mcpSessionId`：复制初始化响应 **Headers** 中的 `Mcp-Session-Id`，这是服务端分配的会话 ID。
+* `mcpProtocolVersion`：复制初始化响应 JSON 中的 `result.protocolVersion`，后续使用实际协商出的协议版本，示例请求的版本为 `2025-06-18`。
+
+后面的通知和工具请求，除公共请求头外，都要添加：
+
+```http
+Mcp-Session-Id: {{mcpSessionId}}
+MCP-Protocol-Version: {{mcpProtocolVersion}}
+```
+
+`Mcp-Session-Id` 通过请求头传递，无需在 URL 中拼接 `?sessionId=...`。如果服务端初始化响应未分配会话 ID，则省略该请求头；当前有状态的 Streamable HTTP 配置应使用服务端返回的会话 ID。
+
+
+
+![image-20261015210736733](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015210738236.png)
+
+
+
+2）客户端发送 initialized 通知
+
+保持 `POST http://localhost:8083/api/mcp`，携带上面的公共请求头、会话 ID 和协议版本，请求体如下：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "notifications/initialized"
+}
+```
+
+该通知不带 `id`。服务端接受通知后返回 `202 Accepted`，响应体为空，不会返回对应的 JSON-RPC 响应；此时即可继续查询工具列表。
+
+
+
+![image-20261015210800959](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015210801886.png)
+
+
+
+3）查询工具列表
+
+保持相同 URL 和请求头，请求体如下：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list",
+  "params": {}
+}
+```
+
+在本次 POST 响应中找到 `id: 2` 的 JSON-RPC 响应，`result.tools` 就是工具列表。
+
+
+
+![image-20261015211650237](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015211652723.png)
+
+
+
+4）调用工具
+
+完成初始化和 initialized 通知后，继续发送 `POST http://localhost:8083/api/mcp`，使用当前会话的请求头：
+
+```http
+Content-Type: application/json
+Accept: application/json, text/event-stream
+Mcp-Session-Id: {{mcpSessionId}}
+MCP-Protocol-Version: {{mcpProtocolVersion}}
+```
+
+Body 选择 `raw` → `JSON`：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "getWeather",
+    "arguments": {
+      "city": "北京"
+    }
+  }
+}
+```
+
+`params.name` 使用 `tools/list` 返回的工具名称，`arguments` 的字段与该工具的 `inputSchema` 一致。当前工具为 `getWeather`，接收字符串参数 `city`，可将城市改为 `上海` 或 `深圳`。
+
+在本次 POST 响应中查看 `id: 3` 的 JSON-RPC 响应，天气调用结果位于 `result.content` 中；如果响应为 SSE，则查看事件 `data` 中的 JSON。
+
+如果携带会话 ID 的请求返回 `404`，需要重新发送不带 `Mcp-Session-Id` 的初始化请求，更新保存的变量，再发送 initialized 通知和工具请求。
+
+协议参考：[初始化与 initialized 通知](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle)、[Streamable HTTP 请求头与会话管理](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports)、[工具调用](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#calling-tools)。
+
+
+
+4、cursor 接入使用
+
+```json
+{
+  "mcpServers": {
+    "weather-streamable": {
+      "url": "http://127.0.0.1:8083/api/mcp",
+      "type": "streamableHttp",
+      "timeout": 60,
+      "disabled": false
+    }
+  }
+}
+```
+
+![image-20261015212435812](https://raw.githubusercontent.com/PeterFangXiaoLin/imgs/main/test/20261015212437150.png)
+
+
+
+#### MCP 客户端开发
+
+1、引入依赖
+
+```xml
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-starter-mcp-client</artifactId>
+</dependency>
+```
+
+2、修改 `application.yml`
+
+```yaml
+    mcp:
+      client:
+        enabled: true
+        name: my-mcp-client
+        version: 1.0.0
+        type: sync
+        # 初始化握手也会发出 MCP 请求，首次 npx 下载需要为这两个超时都留出时间。
+        request-timeout: 60s
+        stdio:
+          connections:
+            weather-stdio:
+              command: java
+              args:
+                - -jar
+                - "D:\\MyCode\\ai-agent\\mcp-server-stdio\\target\\mcp-server-stdio-0.0.1-SNAPSHOT.jar"
+        # https://docs.spring.io/spring-ai/reference/api/mcp/mcp-client-boot-starter-docs.html
+#          servers-configuration: classpath:mcp-servers.json
+        sse:
+          connections:
+            weather-sse:
+              url: http://localhost:8082
+              sse-endpoint: /sse
+        streamable-http:
+          connections:
+            weather-streamable:
+              url: http://localhost:8083/
+              endpoint: api/mcp
+```
+
+
+
+stdio 也可以通过 servers-configuration: 引用json 配置文件进行配置
+
+
+
