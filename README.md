@@ -1164,3 +1164,79 @@ stdio 也可以通过 servers-configuration: 引用json 配置文件进行配置
 
 
 
+
+
+## 智能体
+
+
+
+### CoT思维链
+
+通过提示词：对于问题需要一步一步思考
+
+
+
+### Agent Loop 
+
+while(true) 执行
+
+
+
+### ReAct Agent
+
+推理 -> 行动 -> 思考
+
+
+
+### Open Manus
+
+分层架构
+
+1、BaseAgent
+
+定义基本的状态信息和执行循环
+
+2、ReactAgent
+
+先思考（先调用一次AI），AI回答说要调用工具
+
+程序调用工具，并把工具结果一起发送给AI，AI觉得是否还要继续调用工具，还是直接输出结果
+
+实现父类的抽象方法
+
+3、ToolCallAgent
+
+扩展完善 ReactAgent 的工具调用能力
+
+4、Manus
+
+实现具体的 agent 能力
+
+
+
+#### 核心实现
+
+1、BaseAgent
+
+AgentLoop 实现
+
+使用 模板方法设计模型， 父类定义执行流程，具体执行方法（step）子类实现
+
+
+
+2、ReActAgent
+
+实现 step 流程 一个 thinking 一个 Act， 具体的 thinking 和 Act 由子类去实现，也是模板方法设计模式
+
+
+
+3、ToolCallAgent
+
+实现 thinking 和 Act
+
+1. thinking: 与 AI交互，并从结果从判断是否要调用工具
+2. Act: 执行工具
+3. observe: 将工具执行结果告诉 AI
+
+
+

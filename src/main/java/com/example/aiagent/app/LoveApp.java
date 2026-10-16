@@ -60,7 +60,7 @@ public class LoveApp {
                 .call()
                 .chatResponse();
         String content = chatResponse.getResult().getOutput().getText();
-        log.info("\n========== 对话日志 ==========\n用户输入：\n{}\n\nAI 回复：\n{}\n==============================", message, content);
+        log.info("content: {}", content);
         return content;
     }
 
