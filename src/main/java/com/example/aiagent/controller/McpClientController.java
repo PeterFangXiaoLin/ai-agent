@@ -12,7 +12,7 @@ package com.example.aiagent.controller;
 //@RestController
 //@RequestMapping("/mcp")
 //@Slf4j
-//public class McpClientController {
+public class McpClientController {
 //
 //    @Autowired
 //    private McpClientService mcpClientService;
@@ -38,4 +38,4 @@ package com.example.aiagent.controller;
 //
 //        return manualMcpClientService.chat(query);
 //    }
-//}
+}

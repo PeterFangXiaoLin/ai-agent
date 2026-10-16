@@ -13,7 +13,8 @@
 | 大模型接入 | Spring AI Alibaba DashScope | 1.1.2.0 | 接入阿里云百炼 DashScope 模型服务 |
 | 持久层框架 | MyBatis-Plus | 3.5.15 | 数据访问、分页及 CRUD |
 | 数据库 | MySQL | 由 Spring Boot 管理驱动版本 | 业务数据存储 |
-| 接口文档 | Knife4j / OpenAPI 3 | 4.4.0 | 生成与增强 API 文档 |
+| 接口文档 | Knife4j | 4.4.0 | 增强 API 文档界面 |
+| 接口文档生成 | springdoc-openapi | 2.8.17 | 生成 OpenAPI 3 文档，兼容 Spring Boot 3.5 |
 | 工具库 | Hutool | 5.8.38 | 提供常用 Java 工具类 |
 | 代码简化 | Lombok | 1.18.36 | 减少样板代码 |
 | 测试框架 | Spring Boot Test / JUnit 5 | 由 Spring Boot 管理 | 单元测试与集成测试 |

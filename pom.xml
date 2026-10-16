@@ -28,6 +28,7 @@
     </scm>
     <properties>
         <java.version>21</java.version>
+        <springdoc.version>2.8.17</springdoc.version>
     </properties>
     <dependencies>
         <dependency>
@@ -179,6 +180,20 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Boot 3.5 / Spring 6.2 需要 springdoc 2.8.x，覆盖 Knife4j 引入的 2.3.0。 -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-bom</artifactId>
+                <version>${springdoc.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- 与 springdoc 2.8.17 使用的 Swagger Core 对齐，覆盖 Spring AI 引入的旧版注解。 -->
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
+                <version>2.2.47</version>
+            </dependency>
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-bom</artifactId>

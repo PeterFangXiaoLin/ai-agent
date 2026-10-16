@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 /**
  * 参考 https://java2ai.com/docs/frameworks/agent-framework/tutorials/models
  */
-@Component
+//@Component
 public class SpringAiAiInvoke implements CommandLineRunner {
 
     @Resource
