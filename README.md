@@ -1241,3 +1241,74 @@ AgentLoop 实现
 
 
 
+
+
+## Controller 接口开发
+
+增加 流式对话接口
+
+1） Flux
+
+2）sseEmitter
+
+3）ServerSentEvent
+
+
+
+增加通用代码：跨域请求，全局返回，全局异常
+
+
+
+### 前端代码生成
+
+prompt
+
+```
+你是一位专业的前端开发，请帮我根据下列信息来生成对应的前端项目代码。
+
+## 需求
+
+1）主页：用于切换不同的应用
+
+2）页面 1：AI 恋爱大师应用。页面风格为聊天室，上方是聊天记录（用户信息在右边，AI 信息在左边），下方是输入框，进入页面后自动生成一个聊天室 id，用于区分不同的会话。通过 SSE 的方式调用 doChatWithLoveAppSse 接口，实时显示对话内容。
+
+3）页面 2：AI 超级智能体应用。页面风格同页面 1，但是调用 doChatWithManus 接口，也是实时显示对话内容。
+
+## 技术选型
+
+1. Vue3 项目
+2. Axios 请求库
+3. TailwindCss
+
+## 后端接口信息
+
+接口地址前缀：http://localhost:8080/api
+
+## SpringBoot 后端接口代码
+
+@RestController
+@RequestMapping("/ai")
+public class AiController {
+
+    @GetMapping(value = "/love_app/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> doChatWithLoveAppSse(String message, String chatId) {
+        return loveApp.doChatByStream(message, chatId);
+    }
+
+    @GetMapping("/manus/chat")
+    public SseEmitter doChatWithManus(String message) {
+        YuManus yuManus = new YuManus(allTools, dashscopeChatModel);
+        return yuManus.runStream(message);
+    }
+}
+
+## 使用如下 Skills 设计页面
+
+```
+
+
+
+### 部署上线
+
+
+
