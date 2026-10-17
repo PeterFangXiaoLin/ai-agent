@@ -71,7 +71,7 @@ public class AiController {
         return sseEmitter;
     }
 
-    @GetMapping("/manus/chat")
+    @GetMapping(value = "/manus/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter doChatWithManus(String message) {
         Manus manus = new Manus(allTools, dashScopeChatModel);
         return manus.runStream(message);

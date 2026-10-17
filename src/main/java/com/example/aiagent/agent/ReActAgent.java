@@ -1,5 +1,6 @@
 package com.example.aiagent.agent;
 
+import com.example.aiagent.agent.model.AgentState;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -33,16 +34,12 @@ public abstract class ReActAgent extends BaseAgent {
      */
     @Override
     public String step() {
-        try {
-            boolean shoutAct = thinking();
-            if (!shoutAct) {
-                return "思考完成 - 无需行动";
-            }
-            return act();
-        } catch (Exception e){
-            // 记录异常
-            e.printStackTrace();
-            return "步骤执行失败: " + e.getMessage();
+        boolean shouldAct = thinking();
+        // 模型不再调用工具时，其文本就是最终答复；取消则交由统一出口结束。
+        checkCancellation();
+        if (!shouldAct || getState() == AgentState.FINISHED) {
+            return getFinalAnswer();
         }
+        return act();
     }
 }
